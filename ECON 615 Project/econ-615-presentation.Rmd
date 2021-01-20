@@ -1,0 +1,136 @@
+---
+title: "Assessing the Causal Link between the Minimum Legal Drinking Age and Motor Vehicle Accidents"
+subtitle: "ECON 615 Presentation"
+author: "Daniel Yang"
+date: "30/11/2020"
+output:
+  beamer_presentation:
+    theme: "AnnArbor"
+    colortheme: "dolphin"
+    fonttheme: "structurebold"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(foreign)
+library(tidyverse)
+library(plm)
+library(lmtest)
+library(haven)
+library(sandwich)
+library(miceadds)
+library(multiwayvcov)
+library(rddtools)
+library(np)
+library(ggthemes)
+library(reshape)
+library(kableExtra)
+library(knitr)
+
+load(file = "deaths.rda") #DID
+
+dtypes <- c("all" = "All deaths",
+            "MVA" = "Motor vehicle accidents",
+            "suicide" = "Suicide",
+            "internal" = "All internal causes")
+
+deaths = mutate(deaths, year_fct =  factor(year))
+
+data = filter(deaths, year <= 1983, agegr == "18-20 yrs", dtype == "MVA")
+```
+
+
+## Introduction
+
+Balancing the safety of a heightened minimum legal drinking age (MLDA) vs. the utility offered from a lower one is often a point of contention for the public and policymakers. In the 80's, several states in the USA experimented with different MLDA, which offers an opportunity to measure the effect of an MLDA. In my presentation, I investigate the findings of a research paper on this topic via the DID method.
+
+## Paper
+
+The paper I followed is from Christopher Carpenter and Carlos Dobkin, *The Minimum Legal Drinking Age and Public Health*.
+
+- Published in the *American Economic Association*, 2011 
+- Examines the case for government intervention targeting alcohol consumption in young adults
+- A case study in Angriest and Pischke's *Mastering Metrics* book
+
+
+## Data
+
+The original dataset in the paper is from the Fatal Accident Reporting System and the National Vital Statistics
+
+- Contains the state, year, mortality rates (in 100 000s), and proportion of legal drinking age in each age group 
+- Mortality rates were indexed by the causes
+- Attempts to recover the original dataset failed (openicpsr, FARS query, emailing the authors...)
+
+Instead, an alternative dataset was used (the same dataset analyzed by Angriest and Pishke)
+
+- Key differences are the restructuring of age groups and time period, which led to different point estimates
+
+
+## Regression
+
+In the original paper, the dataset was analyzed using both FE and RDD methods. The panel regression analysis that the paper carried out was
+
+$$Y_{st} = \beta_{FE} \text{MLDA}_{st} + \theta_s + \mu_t + \psi_{st} + \epsilon_{ist}$$
+
+The DID regression actually conducted is similar,
+
+$$Y_{st} = \alpha +  \delta_{DD} \text{MLDA}_{st} + \sum_{k=\text{Alaska}}^{\text{Wyoming}}\beta_k\text{State}_{ks} + \sum_{i=1971}^{1983} \lambda_{i}\text{Year}_{it} + \psi_{st} + \epsilon_{st} $$
+
+Where $\text{State}, \text{ Year}$ variables are dummy variables. We consider the case of no trend, a time/state trend, and a weighted model.
+
+## Regression (cont'd)
+
+Some additional details:
+
+- The control group are the states that did not experiment with lowering MLDA (e.g. Arkensas)
+- Treatment groups are the states which lowered the MLDA (e.g. Hawaii)
+- As a result, we can look at the 18-20 age group to see if there is a significant effect
+
+## Estimates
+
+\begin{table}[ht]
+\centering
+\caption{Point estimates for the effect of MLDA on mortality rates}
+\begin{tabular}[t]{lrr}
+\hline
+ Model & Point Estimate & Robust SE\\
+\hline
+No Trend, No Weight & 7.59 & 2.41\\
+Trend, No Weight & 6.64 & 2.19 \\
+No Trend, Weight & 7.50 & 1.45\\
+Trend, Weight & 6.46 & 1.59\\
+\hline
+\end{tabular}
+\end{table}
+
+## Discussion
+
+Based on our regression analysis, a lowered MLDA has an average increase of 6 to 7 motor vehicle accidents per 100 000 people. 
+
+- While normalized this is a small percentage increase, it nonetheless is statistically significant
+- All models produced similar estimates
+- Because this is a DID regression, we can with some confidence say that the relationship is **causal.**
+
+## Comparison
+
+```{r, echo=FALSE, out.width="50%", out.height="50%", fig.cap="Comparison in the case study"}
+knitr::include_graphics("images/presentationfig1.PNG")
+```
+
+## Limitations
+
+- No post hoc analysis done to check if the DID regression is appropriate
+- As mentioned, the dataset used was different from the paper; however, although point estimates differ, the overall conclusion remains the same
+- The point estimates matches the case study by Angriest and Pischke, but the SE is underinflated
+
+## Conclusion
+
+We do indeed see a negative result in lowering the MLDA in USA in our findings. However, even though Canada is culturally similar, it may not make sense to raise the MLDA here - to do so would incur a loss of political support among younger demographics and with the advent of automated driving it may not be necessary.
+
+## References
+
+1. Carpenter, Christopher, and Carlos Dobkin. "The minimum legal drinking age and morbidity in the United States." Review of Economics and Statistics 99.1 (2017): 95-104.
+2. Angrist, Joshua D., and Jörn-Steffen Pischke. Mastering'metrics: The path from cause to effect. Princeton University Press, 2014.
+
+
+
